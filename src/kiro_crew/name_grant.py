@@ -749,6 +749,82 @@ def _program_names_line(command: str) -> list[str]:
     return names
 
 
+#: What :func:`no_approver_git_refusal` returns for a command whose program is git.
+RUNS_GIT = "it runs git"
+
+#: git's program names. A basename is lower-cased once before the ``in`` test, the
+#: only normalisation: macOS and Windows filesystems are case-insensitive, so
+#: ``GIT`` runs git there. The suffixes are Windows' default ``PATHEXT``.
+_GIT_PROGRAMS = frozenset({"git", "git.exe", "git.com", "git.bat", "git.cmd"})
+
+#: Programs that run a command named in their arguments, beyond ``_DISPATCHERS``.
+_GIT_DISPATCHERS = frozenset({"flock", "chronic"})
+
+#: Options whose value is a program: ``find -exec PROG``, ``rg --pre PROG``.
+_PROGRAM_VALUED_OPTIONS = frozenset({"-exec", "-execdir", "-ok", "-okdir", "--pre"})
+
+
+def no_approver_git_refusal(command: str) -> str:
+    """Why *command* may run git where nobody can approve it, or ``""``.
+
+    The no-approver hook surface's check (``llm_helpers._resolve_permission``).
+    It reads programs with :func:`program_names`, the walk the name grants and
+    the heartbeat approver's git exclusion already use, and matches each one by
+    exact name: its basename, lower-cased, ``in`` ``_GIT_PROGRAMS``. Nothing
+    searches the text for git, so ``grep digit`` and ``make docs VCS=git`` pass.
+    The value of ``find -exec`` / ``rg --pre`` is read as a program the same way.
+
+    A program this cannot read may be git, so it is refused with its own reason
+    rather than :data:`RUNS_GIT`: a substitution anywhere (``_UNENUMERABLE``),
+    grammar the walk does not model (a keyword, an unclosed quote), a name the
+    shell expands (``$EDITOR``, ``/usr/bin/g?t``, ``{g,}it``), or a dispatcher
+    that runs a program named in its own arguments (``sh -c``, ``env``,
+    ``xargs``, ``timeout``), whose flag grammar this does not model.
+    Pure text work: nothing is resolved on ``PATH``.
+    """
+
+    for construct in _UNENUMERABLE:
+        if construct in command:
+            return f"the command line contains {construct!r}, whose programs cannot be enumerated"
+    try:
+        names = _walk_program_names(command)
+        # The option scan reads words as the modelled shell does: PowerShell has no
+        # backslash escape, so a Windows path keeps its separators.
+        windows = _model_is_windows()
+        words = [w.strip("'\"") for w in shlex.split(command, posix=not windows)]
+    except _Unmodelled as exc:
+        return f"the command line could not be reduced to a known set of program names ({exc})"
+    except ValueError:
+        return "the command line's quoting could not be read"
+    for k, word in enumerate(words):
+        if word in _PROGRAM_VALUED_OPTIONS and k + 1 < len(words):
+            names.append(words[k + 1])
+        elif word.startswith("--pre="):
+            names.append(word.partition("=")[2])
+    for name in names:
+        reason = _git_program_refusal(name)
+        if reason:
+            return reason
+    return ""
+
+
+def _git_program_refusal(name: str) -> str:
+    """:func:`no_approver_git_refusal` for one program word."""
+
+    if _model_basename(name).lower() in _GIT_PROGRAMS:
+        return RUNS_GIT
+    if name in ("[", "[["):
+        return ""  # the test builtin and keyword, not a glob
+    windows = _model_is_windows()
+    expanding = _WINDOWS_EXPANDING_CHARS if windows else _EXPANDING_CHARS
+    if any(ch in name for ch in expanding) or "{" in name:
+        return f"{_shown(name)} is expanded by the shell rather than naming a program"
+    key = _program_key(name)
+    if key in _DISPATCHERS or key in _GIT_DISPATCHERS or (windows and key in _WINDOWS_DISPATCHERS):
+        return f"{_shown(name)} runs a program named in its own arguments"
+    return ""
+
+
 def _pin_refusal(name: str, found: str, real: str, witness: bool) -> Refusal | None:
     """Vouch for a non-system program only on the file a HUMAN approved.
 
