@@ -217,3 +217,24 @@ describe('refreshSlot.fulfilled leaves the run state of a send made while its fe
     expect(s.pendingTurnSlot).toBe(null)
   })
 })
+
+describe('refreshSlot.fulfilled keeps a send whose receipt never came', () => {
+  it('keeps an unconfirmed bubble that was on screen before the refresh and the page lacks', () => {
+    let s = openWithHistory()
+    s = reducer(s, appendMessage(user('add the retry guard', { sendId: 's-9', optimistic: true, deliveryUnconfirmed: true })))
+    // The bubble was on screen when the refresh went out, so it is part of the
+    // dispatch baseline, yet the page does not carry it.
+    s = refreshLands(s, history(), [...AT_DISPATCH, 'send:s-9'])
+    const kept = s.messages.filter(m => m.role === 'user' && m.content === 'add the retry guard')
+    expect(kept).toHaveLength(1)
+    expect(kept[0].meta?.deliveryUnconfirmed).toBe(true)
+  })
+
+  it('does not keep a confirmed bubble the page dropped', () => {
+    let s = openWithHistory()
+    s = reducer(s, appendMessage(user('gone', { sendId: 's-7' })))
+    s = refreshLands(s, history(), [...AT_DISPATCH, 'send:s-7'])
+    expect(s.messages.some(m => m.content === 'gone')).toBe(false)
+  })
+})
+

@@ -78,7 +78,12 @@ function identitiesOf(rows: readonly ChatMessage[]): string[] {
  *  prepended above it and carries `sendId`s the baseline never saw. Rows the
  *  rebuilt transcript already holds (the page, the kept older head, the queued
  *  bubbles) are left out too, and so is a send the page lists in its `queue`:
- *  the queued bubble it hydrates is that send. */
+ *  the queued bubble it hydrates is that send.
+ *
+ *  A send whose receipt never came (`deliveryUnconfirmed`) is kept wherever it
+ *  sits, as `switchSlot.fulfilled` keeps it: it was on screen before the
+ *  refresh, but the page may still not carry it, and the bubble can be the only
+ *  copy of the prompt. Kept, never resent. */
 function liveSendsSince(
   rows: readonly ChatMessage[], idsAtDispatch: readonly string[] | undefined, rebuilt: ChatMessage[],
   pageQueue: readonly SlotQueueItem[],
@@ -89,8 +94,9 @@ function liveSendsSince(
   while (from > 0 && !rowIdentities(rows[from - 1]).some(id => before.has(id))) from -= 1
   const queued = new Set(pageQueue.map(q => q.sendId).filter(Boolean))
   return tailNotInPage(
-    rows.slice(from).filter(m => m.role === 'user' && typeof m.meta?.sendId === 'string' && m.meta.sendId
-      && !before.has(`send:${m.meta.sendId}`) && !queued.has(m.meta.sendId)),
+    rows.filter((m, i) => m.role === 'user' && typeof m.meta?.sendId === 'string' && !!m.meta.sendId
+      && !queued.has(m.meta.sendId)
+      && ((i >= from && !before.has(`send:${m.meta.sendId}`)) || m.meta.deliveryUnconfirmed === true)),
     rebuilt,
   )
 }

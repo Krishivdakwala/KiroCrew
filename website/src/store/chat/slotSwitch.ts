@@ -600,9 +600,16 @@ export function addSlotSwitchCases(builder: ActionReducerMapBuilder<ChatState>):
       // so a cached row the server since dropped cannot ride along and a page
       // that already caught the send cannot double it. The trailing reply has
       // its own re-attach below; these go in front of it, in send order.
+      //
+      // A send whose receipt never came (`deliveryUnconfirmed`) is kept the same
+      // way even when it sits in the cache `pending` restored, before the
+      // baseline: the page may predate it, and that bubble can be the only copy
+      // of the prompt. A follow-up Start whose POST was lost opens its new
+      // session through exactly this switch. Kept, never resent.
       const liveFrom = Math.min(state._switchLiveFrom ?? existing.length, existing.length)
       const liveSends = tailNotInPage(
-        existing.slice(liveFrom).filter(m => m.role === 'user' && typeof m.meta?.sendId === 'string' && m.meta.sendId),
+        existing.filter((m, i) => m.role === 'user' && typeof m.meta?.sendId === 'string' && !!m.meta.sendId
+          && (i >= liveFrom || m.meta.deliveryUnconfirmed === true)),
         preserved,
       )
       let next: ChatMessage[]

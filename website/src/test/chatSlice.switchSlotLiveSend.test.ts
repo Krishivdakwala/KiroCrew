@@ -209,3 +209,38 @@ describe('switchSlot.fulfilled leaves the run state of a send that landed while 
     expect(s.pendingTurnSlot).toBeNull()
   })
 })
+
+describe('switchSlot.fulfilled keeps a cached send whose receipt never came', () => {
+  // A follow-up Start sends into a session that is not on screen yet. When
+  // that POST is lost, its bubble sits in the session's cache marked
+  // `deliveryUnconfirmed`, and the switch that opens the session restores the
+  // cache BEFORE the `pending` baseline. The page then read may predate the
+  // send; dropping the bubble would lose the only copy of the prompt.
+  const cached = (meta: Record<string, unknown>) => {
+    const base = init()
+    return { ...base, slotMessages: { ...base.slotMessages, [SLOT]: [user('add the retry guard', meta)] } }
+  }
+
+  it('keeps it when the page does not carry it, and never resends', () => {
+    let s = openSlot(cached({ sendId: 's-9', optimistic: true, deliveryUnconfirmed: true }) as ReturnType<typeof init>)
+    expect(s.messages).toHaveLength(1)
+    s = pageLands(s, [])
+    expect(s.messages.map(m => [m.role, m.content, m.meta?.deliveryUnconfirmed])).toEqual([
+      ['user', 'add the retry guard', true],
+    ])
+  })
+
+  it('does not double it when the page already has the delivered send', () => {
+    let s = openSlot(cached({ sendId: 's-9', optimistic: true, deliveryUnconfirmed: true }) as ReturnType<typeof init>)
+    s = pageLands(s, [user('add the retry guard', { sendId: 's-9', mid: 'm-1', human: true })])
+    expect(s.messages.filter(m => m.role === 'user')).toHaveLength(1)
+    expect(s.messages[0].meta?.mid).toBe('m-1')
+  })
+
+  it('still lets the page replace a cached send that was confirmed', () => {
+    let s = openSlot(cached({ sendId: 's-8' }) as ReturnType<typeof init>)
+    s = pageLands(s, [])
+    expect(s.messages).toEqual([])
+  })
+})
+
