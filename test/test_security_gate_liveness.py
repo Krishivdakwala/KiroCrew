@@ -674,7 +674,18 @@ def _url_payload_command(n: int) -> str:
 #: a SHA-1 git object name (40 lowercase hex digits), so a commit permalink with
 #: the hash in its query renders. Data and one narrowing helper in their own owner
 #: module beside ``exfil.py``, with its header; no pattern moved.
-_PACKAGE_LINE_BUDGET = 34_352
+#: Raised by 364 more, from 34,352, for ``shell_normalizer_ssh_options``: the
+#: reader that hands the command bodies an ssh-family program runs locally (ssh
+#: ``*Command`` options with their double-quote-stripped keyword and full
+#: whitespace/``=`` separator run, rsync ``-e``/``--rsh``, ``sftp -D``, a leading
+#: ``GIT_SSH_COMMAND=`` / ``RSYNC_RSH=``) to the nested-payload walk, its option-end
+#: walk (``--`` and ssh's remote command), the fold-ambiguity-safe short-flag cluster
+#: split that reads a valueless flag bundled before the value-taking one (scp ``-Oo``,
+#: rsync ``-aEe``, a glued ``-e=``), and the consumer check for a leading assignment
+#: (split on shell separators), plus its call in ``_nested_shell_payloads``. It only
+#: adds payloads; the ssh value-letter table moved down into it from ``argv_floor_ssh``
+#: rather than being copied, so the facade names it from that new home.
+_PACKAGE_LINE_BUDGET = 34_716
 
 #: Ceiling on any ONE file in the package. This is what the bound is really for --
 #: a package total says nothing about a single file growing back into a second
