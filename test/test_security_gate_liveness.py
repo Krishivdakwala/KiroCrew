@@ -674,7 +674,12 @@ def _url_payload_command(n: int) -> str:
 #: a SHA-1 git object name (40 lowercase hex digits), so a commit permalink with
 #: the hash in its query renders. Data and one narrowing helper in their own owner
 #: module beside ``exfil.py``, with its header; no pattern moved.
-_PACKAGE_LINE_BUDGET = 34_352
+#: Raised by 84 more, from 34,352, in ``paths_resolver``: the test that confines the
+#: cumulative wait allowance to a thread running an event loop, and
+#: ``bounded_judgment``, which checks one shared deadline before every off-loop
+#: resolver request and clamps only candidate waits to its remainder; and the three
+#: lines the ``paths`` facade's manifest lists for them. No check was relaxed.
+_PACKAGE_LINE_BUDGET = 34_436
 
 #: Ceiling on any ONE file in the package. This is what the bound is really for --
 #: a package total says nothing about a single file growing back into a second
