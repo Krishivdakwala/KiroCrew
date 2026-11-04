@@ -388,6 +388,69 @@ describe('LinkPreviewLayer: the card runs in a sandboxed frame', () => {
     errors.mockRestore()
   })
 
+  it('a failed load shows a card with its reason; Retry loads a fresh frame, and its success shows the normal card', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mount()
+    const a = link()
+    fireEvent.pointerOver(a)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    const first = theFrame()
+    await act(async () => { fromFrame(first, 'failed', { message: 'activate threw' }) })
+    const card = document.querySelector<HTMLElement>('[data-testid="link-preview-failed"]')
+    expect(card).not.toBeNull()
+    expect(card?.getAttribute('role')).toBe('group')
+    expect(card?.getAttribute('aria-label')).toBeTruthy()
+    expect(card?.dataset.cause).toBe('app')
+    // The same surface as a card: placed below the link, at a card's width.
+    expect(card?.className).toMatch(/rounded-lg/)
+    expect(card?.className).toMatch(/bg-bg-elevated/)
+    expect(card?.style.top).toBe(`${50 + 16 + 6}px`)
+    expect(card?.style.width).toBe('360px')
+    expect(card?.querySelector('[role="alert"]')?.textContent).toMatch(/error/i)
+    // The pointer moves from the link into the card: the card stays.
+    fireEvent.pointerOut(a, { relatedTarget: card })
+    expect(document.querySelector('[data-testid="link-preview-failed"]')).not.toBeNull()
+
+    const retry = document.querySelector<HTMLButtonElement>('[data-testid="link-preview-retry"]')
+    if (!retry) throw new Error('no Retry')
+    await act(async () => { fireEvent.click(retry) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(mint).toHaveBeenCalledTimes(2) // inside RETRY_AFTER_MS: only Retry loads it again
+    const second = theFrame()
+    expect(second).not.toBe(first)
+    expect(first.isConnected).toBe(false)
+    expect(retry.disabled).toBe(true)
+    const sent = watch(second)
+    fromFrame(second, 'ready')
+    await waitFor(() => expect(sent.find((m) => m.type === 'show')).toMatchObject({ url: 'https://tickets.example.com/t/TK-1' }))
+    await waitFor(() => expect(document.querySelector('[data-testid="link-preview-failed"]')).toBeNull())
+    fromFrame(second, 'open')
+    expect(second.style.visibility).toBe('visible')
+    errors.mockRestore()
+  })
+
+  it('the failure card names the cause: a timeout, or an app with no frame', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mount()
+    const a = link()
+    fireEvent.pointerOver(a)
+    await act(async () => { await vi.advanceTimersByTimeAsync(READY_TIMEOUT_MS + 10) })
+    expect(document.querySelector<HTMLElement>('[data-testid="link-preview-failed"]')?.dataset.cause).toBe('timeout')
+    expect(document.querySelector('[data-testid="link-preview-failed"] [role="alert"]')?.textContent).toMatch(/too long/i)
+    // Escape closes it.
+    fireEvent.keyDown(document.querySelector<HTMLElement>('[data-testid="link-preview-retry"]') ?? document, { key: 'Escape' })
+    expect(document.querySelector('[data-testid="link-preview-failed"]')).toBeNull()
+
+    mint.mockRejectedValueOnce(new Error('HTTP 404'))
+    const retryAfter = (await import('./LinkPreviewLayer')).RETRY_AFTER_MS
+    await act(async () => { await vi.advanceTimersByTimeAsync(retryAfter) })
+    const b = link('https://tickets.example.com/t/TK-2')
+    fireEvent.pointerOver(b)
+    await act(async () => { await vi.advanceTimersByTimeAsync(400) })
+    expect(document.querySelector<HTMLElement>('[data-testid="link-preview-failed"]')?.dataset.cause).toBe('unavailable')
+    errors.mockRestore()
+  })
+
   it('disabling the app hides and disposes its card and removes the frame', async () => {
     const { qc } = await mount()
     const { el, sent } = await hoverReady(link())
