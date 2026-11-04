@@ -669,7 +669,12 @@ def _url_payload_command(n: int) -> str:
 #: fixed bytes in place), and no piece of the link, cut also at each ``%XX`` escape and
 #: decoded per escaped segment, may be a whole key. No pass widened and no threshold
 #: moved.
-_PACKAGE_LINE_BUDGET = 34_312
+#: Raised by 107, from 34,312, for ``scan_history`` reading ``sessions/*.jsonl``
+#: (``memory_audit``): the transcript row shapes, the fold of one tool call's rows
+#: by ``tool_call_id``, the non-shell tool kinds, row-time merge across files and
+#: the unreadable-file finding, so ``security audit`` never reports an unread
+#: scan as clean. No check was relaxed.
+_PACKAGE_LINE_BUDGET = 34_419
 
 #: Ceiling on any ONE file in the package. This is what the bound is really for --
 #: a package total says nothing about a single file growing back into a second
