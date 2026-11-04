@@ -5670,6 +5670,7 @@
     },
     "warmBriefCard": {
       "asked": "ご依頼",
+      "checked": "確認済み",
       "done": "済んだこと",
       "label": "進捗のまとめ",
       "more_waiting": "ほか {{count}} 件",

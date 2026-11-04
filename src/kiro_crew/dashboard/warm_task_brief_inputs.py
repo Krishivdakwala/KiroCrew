@@ -459,6 +459,16 @@ def pr_numbers(text: str) -> set[int]:
     return numbers
 
 
+def repo_prs(text: str) -> set[tuple[str, int]]:
+    """Every ``(owner/repo, N)`` *text* names with its repository: as a PR
+    URL or ``owner/repo#N``."""
+    return {
+        (f"{m.group(1)}/{m.group(2)}", int(m.group(3)))
+        for pattern in (_PR_URL_RE, _PR_REPO_HASH_RE)
+        for m in pattern.finditer(text)
+    }
+
+
 def facts_of(response: object) -> dict[str, Any] | None:
     """One probe result's ``response`` reduced to what the brief states, or
     ``None`` for an error result (it carries no response)."""

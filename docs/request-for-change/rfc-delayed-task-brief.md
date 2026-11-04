@@ -313,6 +313,16 @@ A fact is **volatile** when it can change without a row in this thread. The gate
 
 On the one-call path every other remote fact is still shown with its last read time. The prompt names the `read_at` fields and forbids stating a volatile fact without one.
 
+**Checked facts** (as built, 2026-11-04; this applies the owner's 2026-10-31 rule 1, "verify before stating", to the body line by line). Rules:
+
+- **Read before named.** "Which" above widens from the open asks to every open work item: the asks' ledger PRs and full URLs first, then each other open item's ledger PR, still at most five, still never a bare `#N`. Every other rule of the live read is unchanged.
+- **Ids.** The prompt's `checked_facts` lists what the gateway itself read for this brief, numbered `f1`, `f2`, ...: each pull request the live read covered (`source` GitHub; a read one carries its state and `read_at`, one whose read failed states only "not checked since HH:MM"), then every work item the prompt shows (`source` task list). A body line about an unread pull request cites its fact and says only that it was not checked; the separate `live_prs` list is gone.
+- **Cite or go.** Every body line that names a pull request, task, file, deploy or ticket ends with the `{fN}` of the fact it states. The gateway deletes, before the section 3.9.6 check, a body line that cites no fact or an unknown id, names a pull request (bare, `owner/repo#N` with its repository, or a URL) or a task (its title or id, as a whole word) whose own fact it does not cite, or names a file, deploy or ticket, cited or not (no fact covers those yet; their checks come with the section 3.8 wake). The line is read through the same entity-decoded, markup-joined views as the section 3.9.6 check. A line with a progress count (`N/M`, `N of M`) stays only when the count is the ledger's goal progress. A picture's source (a fence or a widget) is kept whole: cutting lines from code breaks it, and the section 3.9.6 check still reads all of it.
+- **Checked section.** `meta.brief.checked` stores each fact's `id`, `kind`, `label`, `facts`, `source` and `read_at`; the card lists them under "Checked just now", as plain text in words, after the body and the link row, each row led by a superscript mark that the body draws in place of its `{fN}`. The section 3.9.6 secret scan reads these strings too, and a grounding miss drops them with the model's fields.
+- **No re-send.** The result row stores `facts_digest`: the ledger digest, what waited and each live read, without read times. On the next return, when the newest delivered brief's digest equals the new one and the thread said nothing since the away anchor, no brief is sent and the model is not called.
+
+The brief stays report-only: it never closes a task or writes the ledger.
+
 #### 3.9.2 Message shape
 
 One assistant row, tagged `warm_task_brief_result` as today, in the owner's language. Each section is left out when empty, never padded.

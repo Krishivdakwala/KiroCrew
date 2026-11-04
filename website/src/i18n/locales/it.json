@@ -5982,6 +5982,7 @@
     },
     "warmBriefCard": {
       "asked": "Hai chiesto",
+      "checked": "Verificato",
       "done": "Fatto",
       "label": "Riepilogo",
       "more_waiting": "Altre {{count}}",

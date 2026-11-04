@@ -5982,6 +5982,7 @@
     },
     "warmBriefCard": {
       "asked": "Você pediu",
+      "checked": "Verificado",
       "done": "Feito",
       "label": "Resumo",
       "more_waiting": "Mais {{count}}",
