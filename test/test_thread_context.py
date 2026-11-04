@@ -14,6 +14,10 @@ import pytest
 
 from kiro_crew.channel_history import ChannelHistory, HistoryEntry
 
+# These tests read the shape of a built turn; a runner low on free memory
+# would prepend the [RESOURCES] advisory to it.
+pytestmark = pytest.mark.usefixtures("ample_host_resources")
+
 # ── Phase 0: ChannelHistory thread-aware ──
 
 
