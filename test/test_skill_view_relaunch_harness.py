@@ -282,6 +282,9 @@ def host_tree(tmp_path, monkeypatch):
         resources = [] if name == "plain" else [f"skill://catalog/{name}/*/SKILL.md"]
         spec = {"name": name, "tools": ["read"], "resources": ["file://R.md", *resources]}
         (agents / f"{name}.json").write_text(json.dumps(spec), encoding="utf-8")
+    # The drain's time budget is sized by _prune_budget_within(_PROJECTION_LOCK_TIMEOUT_SECS)
+    # for production lock contention; tests must not depend on that wall-clock ceiling.
+    monkeypatch.setattr(projection, "_PRUNE_MAX_SECONDS_PER_RUN", float("inf"))
     return agents, project
 
 

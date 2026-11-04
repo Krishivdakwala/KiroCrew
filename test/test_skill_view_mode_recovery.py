@@ -68,6 +68,9 @@ def native_tree(tmp_path, monkeypatch):
     )
     monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
     (agents / "custom.json").write_text('{"name":"custom","description":"v1"}', encoding="utf-8")
+    # The drain's time budget is sized by _prune_budget_within(_PROJECTION_LOCK_TIMEOUT_SECS)
+    # for production lock contention; tests must not depend on that wall-clock ceiling.
+    monkeypatch.setattr(projection, "_PRUNE_MAX_SECONDS_PER_RUN", float("inf"))
     return agents, project
 
 

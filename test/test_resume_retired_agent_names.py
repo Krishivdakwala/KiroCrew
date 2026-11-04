@@ -202,6 +202,9 @@ def published_view(tmp_path, monkeypatch):
     monkeypatch.setattr(projection.platform_compat, "path_volume_is_remote", lambda path: False)
     monkeypatch.setattr(projection.platform_compat, "first_linked_ancestor", lambda path: None)
     monkeypatch.setattr(projection, "_DRAIN_BATCH_PAUSE_SECS", 0)
+    # The drain's time budget is sized by _prune_budget_within(_PROJECTION_LOCK_TIMEOUT_SECS)
+    # for production lock contention; tests must not depend on that wall-clock ceiling.
+    monkeypatch.setattr(projection, "_PRUNE_MAX_SECONDS_PER_RUN", float("inf"))
     # The pair must still be on disk after the projection is dropped: the drain
     # under test retires it, not the eager prune a dropped projection runs.
     monkeypatch.setattr(
