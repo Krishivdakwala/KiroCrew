@@ -7248,6 +7248,7 @@
     },
     "errorBoundary": {
       "lazy_page_load_failed": "Impossible de charger cette page. Vérifie la connexion à la passerelle, puis réessaie.",
+      "owner_only": "Réservé au propriétaire",
       "reload_page": "Recharger la page",
       "something_went_wrong": "Une erreur s'est produite",
       "try_again": "Réessayer"

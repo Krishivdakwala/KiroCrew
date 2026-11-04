@@ -326,6 +326,8 @@ async def test_two_collaborators_race_and_exactly_one_wins(state):
     winner = next(body for status, body in results if status == 200)
     loser = next(body for status, body in results if status == 409)
     assert loser["code"] == "already_resolved"
+    assert loser["state"] == "resolved"
+    assert loser["state"] == "resolved"
     assert loser["decision"] == winner["decision"]
     decided = winner["decision"]
     assert decided["state"] == "resolved"
@@ -372,6 +374,8 @@ async def test_stale_response_after_resolution_gets_conflict_with_current_state(
         body = await stale.json()
     assert stale.status == 409
     assert body["code"] == "already_resolved"
+    assert body["state"] == "resolved"
+    assert body["state"] == "resolved"
     assert body["decision"]["outcome"] == "rejected"
     assert body["decision"]["responder"]["display"]["name"] == "Bob"
 

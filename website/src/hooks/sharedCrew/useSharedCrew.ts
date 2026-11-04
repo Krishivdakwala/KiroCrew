@@ -31,6 +31,12 @@ export function useSharedCrewViewer(enabled = true) {
   return useQuery({ queryKey: sharedCrewKeys.viewer, queryFn: () => api.sharedCrewViewer(), enabled, staleTime: 60_000, retry: false })
 }
 
+/** Whether this tab is a Shared Crew guest (never true until the server says so). */
+export function useIsGuest(): boolean {
+  const { data } = useQuery({ queryKey: sharedCrewKeys.guest, queryFn: () => api.sharedCrewIsGuest(), staleTime: 60_000, retry: false })
+  return data === true
+}
+
 /** This Crew's People/setup mode. A missing or failing route is a query error,
  *  which every consumer renders as an error, never as a personal Crew. */
 export function useSharedCrewMode(enabled = true, { fetchOnMount = true }: { fetchOnMount?: boolean } = {}) {

@@ -7068,6 +7068,7 @@
     },
     "errorBoundary": {
       "lazy_page_load_failed": "Diese Seite konnte nicht geladen werden. Prüfe die Verbindung zum Gateway und versuche es erneut.",
+      "owner_only": "Nur für den Eigentümer",
       "reload_page": "Seite neu laden",
       "something_went_wrong": "Etwas ist schiefgelaufen",
       "try_again": "Erneut versuchen"

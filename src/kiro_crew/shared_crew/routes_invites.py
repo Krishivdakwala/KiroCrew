@@ -129,14 +129,14 @@ async def _owner_refusal(request: web.Request) -> web.Response | None:
 
 async def _owner_refusal_decision(request: web.Request) -> web.Response | None:
     from kiro_crew.dashboard.handlers._shared import _is_restricted_session
-    from kiro_crew.dashboard.handlers.source_providers import is_owner_dashboard_request
+    from kiro_crew.dashboard.handlers.source_providers import is_host_owner_dashboard_request
 
     if not _dashboard_user(request) or request.get("app") != "":
         return _error(403, "forbidden")
     state = request.app.get("state")
     if state is None or _is_restricted_session(state, request):
         return _error(403, "restricted_session")
-    if not is_owner_dashboard_request(request):
+    if not is_host_owner_dashboard_request(request):
         return _error(403, "owner_only")
     viewer = viewer_principal(request)
     if viewer.provenance is Provenance.LOCAL_OPERATOR:
@@ -288,6 +288,7 @@ async def api_revoke(request: web.Request) -> web.Response:
         # The share is gone at Tailscale, but the seed could not be cleared.
         return _error(503, exc.code)
     await close_revoked_sockets(request.app, withdrawn)
+    await pause_revoked_schedules(request.app, withdrawn)
     return web.json_response(result)
 
 
@@ -325,6 +326,38 @@ async def close_revoked_sockets(app: web.Application, logins: frozenset[str]) ->
         except Exception:  # noqa: BLE001 -- one socket never blocks the rest
             logger.debug("closing a revoked person's socket failed", exc_info=True)
     return closed
+
+
+async def pause_revoked_schedules(app: web.Application, logins: frozenset[str]) -> int:
+    """Pause the schedules the revoked people created. Never raises.
+
+    A schedule a guest created is stamped with the guest's principal
+    (``guest_scope.guest_job_tag``) and would otherwise keep running, with the
+    owner's approvals, after the guest lost access. The owner resumes one that
+    should keep running.
+    """
+    state = app.get("state")
+    crons = getattr(state, "crons", None)
+    if not logins or crons is None:
+        return 0
+    from kiro_crew.shared_crew.contracts import principal_id_for
+    from kiro_crew.shared_crew.guest_scope import guest_job_tag
+    from kiro_crew.shared_crew.identity import PROVIDER_TAILSCALE, TAILNET_ISSUER
+
+    tags = {
+        guest_job_tag(principal_id_for(PROVIDER_TAILSCALE, TAILNET_ISSUER, login.strip().lower()))
+        for login in logins
+    }
+    paused = 0
+    try:
+        for job in await crons.list_jobs_async():
+            if job.created_by in tags and await crons.enable_job_async(job.id, enabled=False):
+                paused += 1
+        if paused:
+            state.push_refresh("crons")
+    except Exception:  # noqa: BLE001 -- the revoke itself has already succeeded
+        logger.warning("pausing a revoked person's schedules failed", exc_info=True)
+    return paused
 
 
 @preview_only

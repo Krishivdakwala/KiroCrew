@@ -460,9 +460,11 @@ def conflict_body(resolution: Resolution) -> dict[str, Any]:
     body: dict[str, Any] = {
         "error": "this decision was already answered",
         "code": "already_resolved",
+        "state": DecisionState.RESOLVED.value,
     }
     if resolution.decision is not None:
         body["decision"] = resolution.decision.to_public_dict()
+        body["state"] = resolution.decision.state.value
     return body
 
 
@@ -481,11 +483,14 @@ def respond(reply: Reply) -> Any:
 
     status, body = reply
     if status == 409:
+        decision = body.get("decision")
+        state = decision.get("state") if isinstance(decision, dict) else None
         return web.json_response(
             {
                 "error": "this decision was already answered",
                 "code": "already_resolved",
-                "decision": body.get("decision"),
+                "state": state or DecisionState.RESOLVED.value,
+                "decision": decision,
             },
             status=409,
         )

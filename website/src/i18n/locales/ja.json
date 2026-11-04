@@ -6888,6 +6888,7 @@
     },
     "errorBoundary": {
       "lazy_page_load_failed": "このページを読み込めませんでした。ゲートウェイへの接続を確認して、もう一度お試しください。",
+      "owner_only": "オーナー専用",
       "reload_page": "ページを再読み込み",
       "something_went_wrong": "問題が発生しました",
       "try_again": "もう一度試す"

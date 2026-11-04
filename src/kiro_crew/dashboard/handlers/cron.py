@@ -215,7 +215,7 @@ if TYPE_CHECKING:  # names it serves from outside the family, from their homes
         resolve_lesson_memory_store,
     )
     from kiro_crew.dashboard.handlers.source_providers import (  # noqa: F401
-        is_owner_dashboard_request,
+        is_host_owner_dashboard_request,
     )
     from kiro_crew.dashboard.slot_ownership import (  # noqa: F401
         app_holds_gateway_key,
@@ -267,6 +267,10 @@ if TYPE_CHECKING:  # names it serves from outside the family, from their homes
     from kiro_crew.security import (  # noqa: F401
         redact_credentials,
         redact_exfiltration_urls,
+    )
+    from kiro_crew.shared_crew.guest_scope import (  # noqa: F401
+        guest_created_by,
+        is_guest_session,
     )
     from kiro_crew.validation import (  # noqa: F401
         _MODEL_NAME_RE,

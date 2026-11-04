@@ -51,6 +51,7 @@ from kiro_crew.dashboard.handlers.cron_shared import (
 )
 from kiro_crew.dashboard.state import DashboardState
 from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+from kiro_crew.shared_crew.guest_scope import guest_created_by, is_guest_session
 from kiro_crew.validation import (
     _MODEL_NAME_RE,
     CHANNEL_ID_RE,
@@ -87,6 +88,21 @@ _MAX_CRON_BODY_BYTES = 12 * MAX_CRON_MESSAGE + 64 * 1024
 
 
 # ── Cron jobs ──
+
+
+def _guest_auto_approval_refusal(
+    request: web.Request, approval_mode: object
+) -> web.Response | None:
+    """403 when a Shared Crew guest sets ``approval_mode=auto`` on a schedule.
+
+    ``auto`` skips the owner's approval on every later run, so it stays the host
+    owner's decision. A guest still creates and edits schedules on the default mode.
+    """
+    if approval_mode != "auto" or not is_guest_session(request):
+        return None
+    return web.json_response(
+        {"error": "auto approval on a schedule is owner-only", "code": "owner_only"}, status=403
+    )
 
 
 def _schema_field(field_name: str) -> FieldSpec | None:
@@ -543,6 +559,8 @@ async def api_crons_create(request: web.Request) -> web.Response:
         return web.json_response({"error": "invalid channel ID format"}, status=400)
     if approval_mode and approval_mode not in {"", "auto"}:
         return web.json_response({"error": "invalid approval_mode"}, status=400)
+    if (guest_denied := _guest_auto_approval_refusal(request, approval_mode)) is not None:
+        return guest_denied
     silent = body.get("silent", False)
     strict_schedule = body.get("strict_schedule", False)
     # ``False`` creates the job already paused in the one locked write, so a
@@ -670,6 +688,9 @@ async def api_crons_create(request: web.Request) -> web.Response:
         from kiro_crew.apps.cron_sdk import owner_tag
 
         add_kwargs["created_by"] = owner_tag(app_claim)
+    elif guest_by := guest_created_by(request):
+        # A revoked guest's schedules are found by this stamp and paused.
+        add_kwargs["created_by"] = guest_by
     # Which schedule this job carries. Resolved to kwargs FIRST, then handed to a
     # single add_job_async call: one call site means the store-failure handling
     # below is written once and cannot drift between the three schedule shapes.
@@ -882,6 +903,22 @@ async def api_cron_update(request: web.Request) -> web.Response:
     ):
         if key in body:
             kwargs[key] = body[key]
+    if (
+        guest_denied := _guest_auto_approval_refusal(request, kwargs.get("approval_mode"))
+    ) is not None:
+        return guest_denied
+    if is_guest_session(request):
+        # A guest does not rewrite a job that runs unattended: an auto-approved
+        # prompt, or a script or command the owner set up.
+        stored = await state.crons.get_job_async(job_id)
+        if stored is not None and (
+            getattr(stored, "approval_mode", "") == "auto"
+            or getattr(stored, "script", "")
+            or getattr(stored, "command", "")
+        ):
+            return web.json_response(
+                {"error": "this schedule is owner-only", "code": "owner_only"}, status=403
+            )
     timeout_secs, timeout_err = timeout_secs_from_body(body)
     if timeout_err is not None:
         return timeout_err

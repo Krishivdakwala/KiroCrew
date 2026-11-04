@@ -7068,6 +7068,7 @@
     },
     "errorBoundary": {
       "lazy_page_load_failed": "यह पेज लोड नहीं हो सका। गेटवे का कनेक्शन जाँचें, फिर दोबारा कोशिश करें।",
+      "owner_only": "केवल स्वामी के लिए",
       "reload_page": "पेज फिर से लोड करें",
       "something_went_wrong": "कुछ गलत हो गया",
       "try_again": "फिर से कोशिश करें"

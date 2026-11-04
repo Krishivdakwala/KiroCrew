@@ -26,7 +26,7 @@ from kiro_crew.dashboard.handlers.cron_shared import (
     _invalid_path_id_response,
     _redacted_grant_map,
 )
-from kiro_crew.dashboard.handlers.source_providers import is_owner_dashboard_request
+from kiro_crew.dashboard.handlers.source_providers import is_host_owner_dashboard_request
 from kiro_crew.dashboard.state import DashboardState
 from kiro_crew.loop_lock import LoopBoundLock
 from kiro_crew.security import redact_credentials, redact_exfiltration_urls
@@ -126,7 +126,7 @@ async def api_crons(request: web.Request) -> web.Response:
     # and no secret VALUE is ever serialized here (names only). Every
     # privileged grant MUTATION (request, approve, deny, revoke, and both
     # denial branches) writes its own SEL event.
-    _owner_view = is_owner_dashboard_request(request)
+    _owner_view = is_host_owner_dashboard_request(request)
     # The run claims and the slot registry belong to the loop, so they are read
     # here; everything else is built in a worker thread below. Building every
     # row (each free-text field through both redaction passes) and encoding the

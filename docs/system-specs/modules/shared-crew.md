@@ -20,7 +20,8 @@ shares this machine through Tailscale and admits the login that accepted, in
 Tailscale mode only. Tailscale is the only access authority: Crew approves nobody
 and nobody types the set of people who get in.
 
-No permission scoping in this release: every collaborator a Crew admits has the same
+No permission scoping in this release beyond the owner-only list in "Guest scope": every
+collaborator a Crew admits has the same
 rights, and no code path reads a role or an ACL.
 
 A Crew is a machine identity, not a group of people. Its synthetic principal is the
@@ -200,7 +201,7 @@ The owner (stable user id and login both match this machine's node,
 `tailnet_direct.is_owner`) carries the owner's dashboard subject (`owner_id`, else
 the bootstrap `local-app`) and `auth_owner_whois`, so every owner-gated route
 answers it (`dashboard.tailnet_owner`). Two irreversible actions, `DELETE
-/api/shared-crew/tailscale/credential` and `DELETE /api/sessions`, also need
+/api/shared-crew/tailscale/credential` and `DELETE /api/sessions`, `POST /api/upload` and `POST /api/screenshot` (native pickers), `/api/themes/install-zip`, also need
 `X-Kirocrew-Confirm: irreversible`, which the dashboard sends only after its own
 confirm dialog; without it the answer is 428 `confirm_required`. Anyone else is the
 dashboard user `tailnet:uid:<id>` (a tagged node `tailnet:node:<name>`), which never
@@ -1380,6 +1381,92 @@ it can lose again if yet another send landed first.
 
 Everything is in memory and bounded (`MAX_SESSIONS`, `HISTORY_PER_SESSION`). A tab
 that never learned a revision sends none and is not compared.
+
+### Guest scope
+
+A guest (a collaborator a membership boundary admitted, `guest_scope.is_guest_session`)
+does everything the owner does inside the Crew. `is_owner_dashboard_request` answers
+true for a guest's own dashboard session (empty app claim, dashboard-user claim, no
+internal secret, verified collaborator actor, preview on) on every route outside the
+owner-only list, so the shared gates (`require_owner_dashboard_request`,
+`require_owner_for_dashboard_caller`, `deny_non_dashboard_caller`) admit chat, slot
+creation, the agent picker, mates and their threads, approvals, artifacts, skills,
+steering, prompts, workflows, schedules and the other in-Crew routes. Anything not
+listed is open to a guest.
+
+`is_host_owner_dashboard_request` is the strict predicate and never admits a guest. It
+guards what spends or discloses the host owner's credentials or reaches beyond this
+Crew: provider status and source-provider access, remote crews and cloud
+(`handlers_instances*`, `remote_*`, `handlers_cloud`, `handlers_crew_turn`), change-card
+apply, the credential-redaction owner view, agent secrets in `GET /api/agents`, schedule
+secret-grant metadata, flagged outbox files unscanned, the session export's context
+layer, the approval override, protected tag identities, host setup
+(`kiro_prerequisite`), the apps proxy principal (`apps.routes_proxy._proxy_principal`)
+and the Shared Crew invite and access routes.
+
+The owner-only routes are `guest_scope.OWNER_ONLY_PATH_PREFIXES`,
+`OWNER_ONLY_RAW_PREFIXES`, `OWNER_ONLY_PATH_PATTERNS` and `OWNER_ONLY_METHOD_PATHS`,
+matched on the normalized request path (a request path holding a `.` or `..` segment is
+always refused to a guest):
+
+| Group | Routes |
+|---|---|
+| Who may reach the Crew and over which network | `/api/shared-crew/{access,preview,tailscale,ssm}`, `/api/tailnet`, `/api/tunnel`, `/api/mobile-connect`, `/api/instances` |
+| `config.json` and security policy | `/api/config`, `/api/dashboard/config`, `/api/agent/config`, `/api/security`, `/api/governance`, `/api/redaction`, `/api/admin`, `/api/sel`, `/api/decisions/{consent,provider,local-models}`, `/api/aws`, `/api/computer-use/config`, `/api/telemetry/collection`, `/api/debug`, `/api/logs`, `/api/diagnostics`, `/api/system` |
+| Credentials, connection secrets and channels | `/api/secrets`, `/api/connections`, `/api/kas-login`, `/api/kas-bundle`, `/api/sso-login`, `/api/sso-ttl`, `/api/token`, `/api/auth`, `/api/webhooks`, the channel config routes (`/api/channels`, `/api/channel`, `/api/channel-folders`, `/api/slack`, `/api/telegram`, `/api/discord`, `/api/feishu`, `/api/imessage`, `/api/teams`, `/api/messaging`, `/api/webex`, `/api/wecom`, `/api/weixin`, `/api/whatsapp`), `/api/voice/config`, `/api/notifications/push`, `/api/cloud`, `/api/deploy`, `/api/artifacts/{slug}/{publish,sharing,pull-latest,upstream-status,overwrite-remote}` and `/api/publish-providers`, `/api/usage` and `/api/sessions/usage` (billing and sign-in) (they spend the owner's AWS account or publish publicly), `/api/remote-artifacts`, `/api/send-message`, `/api/delete-message`, `/api/slack-profile`, `/api/mediated-secret-*`, `/api/app-store`, `/api/session-environments`, `/api/wakatime`, `/api/onboarding`, `/api/mcp-gateway`, `/api/mcp/oauth` |
+| Gateway process and host-run code | `/api/restart`, `/api/shutdown`, `/api/update`, `/api/computer-use`, `/api/terminal`, `/api/ws/terminal`, `/api/mcp`, `/api/capability`, `/api/mcp-apps` (an embedded app's tool call), `/api/hooks`, `/api/kiro-hooks`, `/api/apps` and `/apps` (installed apps and their backends), `/api/browser`, `/api/themes/install`, `/api/portability`, `/api/worktree`, `/api/project-scaffold`, `/api/stt/ffmpeg`, a schedule's script source and secret grants (`/api/crons/{id}/{script,secrets}`), `/api/skills/-/trust` (project-skill trust), the memory administration routes (stores, backups, restore, import, migrate, embeddings), `DELETE /api/sessions` |
+| Host filesystem | `/api/file-*` (except the attachment read below), `/api/directory-upload`, `/api/browse-dirs`, `/api/browse-files`, `/api/path-complete`, `/api/reveal`, `/api/project/{git,tree}`, `/api/knowledge/{pick-folder,sources,ingest,import,remote-search}`, and the writes to `/api/agents`, `/api/workspaces`, `/api/projects`, `/api/themes` and a session's `/environment` (a guest reads them; browsing or writing a session's remote files is closed) |
+
+`test_shared_crew_guest_parity.py` copies the owner-only lists in full and keeps `test/data/shared_crew_guest_open_routes.txt` as the reviewed guest-open set, so a registered route in neither fails the test. It checks that each prefix
+still names a registered route, and compares the guest-open routes of the live dashboard's route table (every registered
+route, apps included) with `test/data/shared_crew_guest_open_routes.txt`, so a new route is either listed
+owner-only or added to the allow-list knowingly.
+
+Chat attachment preview. `GET /api/file-raw` is the one file route a guest reaches, and
+only for a file directly inside the upload directory or a session's
+`sessions/<stem>.attachments/` directory (`guest_scope.attachment_path`). The path is
+resolved first, so `..`, a symlink and a symlinked directory that leave a store are
+refused, as is a file with a second hard link, and the route opens the resolved path
+rather than the requested one. The route's own checks (sensitive path, no-follow open, raster, SVG and PDF
+types only) still apply. The owner's reach is unchanged.
+
+WebSockets. A socket joins the owner set (`_owner_ws_clients`) only for the host owner.
+Frames the Crew shares go through `collaborators.broadcast_to_collaborators` /
+`deliver_to_collaborators` (owner sockets plus collaborator sockets): question cards,
+side-chat frames, pin changes, crew-log slot frames, dashboard cards and the per-member event log. Host-only frames (`broadcast_ws_owners`:
+credentials, redaction, live browser and its connect snapshot, computer use, change cards) never reach a guest,
+and a guest's socket never drives provider status probes.
+
+Central refusal. `slot_ownership_middleware` (the checkpoint inside token auth) refuses a guest's
+write (any method but GET, HEAD and OPTIONS) to an owner-only route with 403 `owner_only`
+before the handler runs, so a listed route stays closed even when its handler never asks the
+owner gate. Signing out and refreshing (`/api/auth`, `/api/logout`) are exempt. Reads are left
+to their handlers, because the dashboard polls several listed routes.
+
+Approval postures. A guest approves or rejects each tool call. Turning on `trust`, `trust_reads`,
+`yolo`, `trust_command` or `trust_base` (`POST /api/chat/mode`, the approve action) and a task
+run's `auto_approve` are refused to a guest (403 `owner_only`), because they would keep
+auto-approving after the guest is revoked.
+
+Schedules. A guest creates and edits schedules on the default approval mode, and cannot edit a
+schedule that is auto-approved or runs a script or command;
+`approval_mode=auto` on create or update is refused (403 `owner_only`), because it skips
+the owner's approval on every later run. A schedule a guest creates is stamped
+`created_by = guest:<principal id>`, and revoking that person pauses it
+(`routes_invites.pause_revoked_schedules`); the owner resumes one that should keep running.
+
+Dashboard. `GET /api/auth/me` carries `is_guest`. For a guest the website hides the owner-only
+rail entries (Apps, Customize, Webhooks, Settings and the installed-app rows) and shows one
+"Owner only" state (`OwnerOnlyState`) in place of an owner-only page, or when a page throws a 403
+`owner_only`. The server list above stays the authority; the website list only avoids advertising.
+
+Turn provenance. The mark a turn inherits as owner-sent (`_directive_owner_origin`, the
+crew-lineage read and `responsive_chat`) comes from `is_host_owner_dashboard_request`, so
+a guest's turn never reuses the host owner's session security waivers or the owner's
+remote-crew credentials.
+
+An `already_resolved` 409 carries `state` (the decision's state, `resolved` when the
+registry no longer holds the record) beside `decision`.
 
 ## 6. Wire shapes
 
