@@ -429,6 +429,55 @@ def _deep_merge(base: dict, overlay: dict) -> dict:
     return result
 
 
+#: Renamed keys a reader still accepts, per section: each canonical key and its
+#: older spellings, in the order the reader tries them
+#: (``sections_agent._read_dangerously_skip_permissions``,
+#: ``memory_sections._read_auto_add_documents``).
+_RENAMED_KEY_SPELLINGS: dict[str, dict[str, tuple[str, ...]]] = {
+    "agent": {"dangerously_skip_permissions": ("dangerouslySkipPermissions", "yolo")},
+    "knowledge": {"auto_add_documents": ("auto_ingest_doc_links",)},
+}
+
+#: Renamed keys whose reader skips any spelling that is not a real bool and
+#: moves on to the next one.
+_RENAMED_KEYS_READ_AS_REAL_BOOL: frozenset[tuple[str, str]] = frozenset(
+    {("agent", "dangerously_skip_permissions")}
+)
+
+
+def _reader_uses(body: dict, spelling: str, real_bool: bool) -> bool:
+    """True when a reader would take *spelling*'s value from *body*."""
+    return spelling in body and (not real_bool or isinstance(body[spelling], bool))
+
+
+def _canonical_overlay_keys(overlay: dict) -> dict:
+    """*overlay* with each older spelling of a renamed key under its current name.
+
+    ``save()`` emits only the current name, so an overlay that still uses an old
+    spelling (``agent.yolo``) never matches it in :func:`_subtract_overlay` and its
+    value is written into ``config.json``. The spelling the reader would use wins,
+    as at load: the first one present, or for a key in
+    :data:`_RENAMED_KEYS_READ_AS_REAL_BOOL` the first one holding a real bool. A
+    current name the reader would use is left alone.
+    """
+    result = dict(overlay)
+    for section, renames in _RENAMED_KEY_SPELLINGS.items():
+        body = result.get(section)
+        if not isinstance(body, dict):
+            continue
+        body = dict(body)
+        for canonical, older in renames.items():
+            real_bool = (section, canonical) in _RENAMED_KEYS_READ_AS_REAL_BOOL
+            if _reader_uses(body, canonical, real_bool):
+                continue
+            for spelling in older:
+                if _reader_uses(body, spelling, real_bool):
+                    body[canonical] = body[spelling]
+                    break
+        result[section] = body
+    return result
+
+
 def _subtract_overlay(merged: dict, overlay: dict) -> dict:
     """Remove leaf values from *merged* that are owned by the overlay.
 
