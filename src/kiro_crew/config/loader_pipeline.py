@@ -706,7 +706,7 @@ def build_config(
         agent_defaults = _sections.SectionReader(AgentConfig, {})
         cfg.agent.acp_backend = _read_backend_choice(agent_defaults, {}, "acp_backend")
         cfg.agent.member_acp_backend = _read_backend_choice(
-            agent_defaults, {}, "member_acp_backend"
+            agent_defaults, {}, "member_acp_backend", inherit=cfg.agent.acp_backend
         )
         cfg._base_unreadable = doc.base_unreadable
         cfg._overlay_unreadable = doc.overlay_unreadable

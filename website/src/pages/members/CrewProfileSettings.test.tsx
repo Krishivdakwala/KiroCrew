@@ -788,6 +788,21 @@ describe('CrewProfileSettings harness', () => {
     expect(within(options).getByRole('radio', { name: /Inherited/ })).toHaveTextContent('Follows the crew default (now Kiro Agent).')
   })
 
+  it.each([
+    ['settings', 'Set in Settings → Agent Harness.'],
+    ['legacy', 'Set by agent.member_acp_backend in config.json.'],
+    ['fallback', "Settings → Agent Harness is Claude Code, which mates can't run on, so this is Kiro Agent."],
+  ])('says where Inherited comes from (%s)', async (source, text) => {
+    localStorage.setItem(PREVIEW_CREWMATE_HARNESS, '1')
+    readout({ inherited_source: source, settings_harness: 'claude' })
+    setup(member())
+    await waitFor(() => expect(rowValue('acp_backend')).toHaveTextContent(/^Inherited \(Kiro Agent\)$/))
+    const options = open('acp_backend')
+    expect(within(options).getByRole('radio', { name: /Inherited/ })).toHaveTextContent(
+      `Follows the crew default (now Kiro Agent). ${text}`,
+    )
+  })
+
   it('lists the pinned harness models, not the install list', async () => {
     readout({ acp_backend: 'claude', harness: 'claude' })
     setup(member())

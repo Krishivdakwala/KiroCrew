@@ -14919,7 +14919,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "Les coéquipiers s’exécutent sur {{harness}}, le harnais choisi ici. Chaque coéquipier peut fixer le sien dans ses réglages.",
+        "crewmate_harness_legacy": "Les coéquipiers s’exécutent sur {{harness}}, défini par agent.member_acp_backend dans config.json. Ce réglage l’emporte sur le harnais choisi ici.",
+        "crewmate_harness_fallback": "Les coéquipiers ne peuvent pas s’exécuter sur {{settings}}, ils s’exécutent donc sur {{harness}}. Chaque coéquipier peut fixer son propre harnais dans ses réglages."
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "Superpose au chat un diagnostic en direct du défilement et des ancres",
@@ -21057,7 +21060,10 @@
       "profile_harness_choose": "Choisir un harness de l’agent",
       "member_count_filtered_one": "coéquipiers : {{shown}}/{{n}}",
       "member_count_filtered_many": "coéquipiers : {{shown}}/{{n}}",
-      "member_count_filtered_other": "coéquipiers : {{shown}}/{{n}}"
+      "member_count_filtered_other": "coéquipiers : {{shown}}/{{n}}",
+      "profile_harness_source_settings": "Défini dans Réglages → Agent Harness.",
+      "profile_harness_source_legacy": "Défini par agent.member_acp_backend dans config.json.",
+      "profile_harness_source_fallback": "Réglages → Agent Harness est {{settings}}, sur lequel les coéquipiers ne peuvent pas s’exécuter, donc c’est {{harness}}."
     },
     "tasksCapacityCard": {
       "title": "Tâches et capacité",

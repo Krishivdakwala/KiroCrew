@@ -247,7 +247,20 @@ def _register_config_watch(
             return
         state.push_refresh("config")
 
+    async def _alarm_crewmate_harness_fallback(change: ConfigChange) -> None:
+        # A new Settings harness crewmates cannot run on moves them onto KAS; the
+        # bell says so, from whichever writer changed it (dashboard, CLI, $EDITOR).
+        from kiro_crew import crewmate_harness_notice
+
+        await crewmate_harness_notice.deliver(state, change.new)
+
     subs = [
+        live.subscribe(
+            "agent.acp_backend",
+            "agent.member_acp_backend",
+            callback=_alarm_crewmate_harness_fallback,
+            name="crewmate.harness_fallback",
+        ),
         live.subscribe(
             "dashboard.browser_local_origins",
             "browser",

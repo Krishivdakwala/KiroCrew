@@ -14919,7 +14919,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "Los compañeros se ejecutan en {{harness}}, el entorno elegido aquí. Cada compañero puede fijar el suyo en su configuración.",
+        "crewmate_harness_legacy": "Los compañeros se ejecutan en {{harness}}, fijado por agent.member_acp_backend en config.json. Ese ajuste prevalece sobre el entorno elegido aquí.",
+        "crewmate_harness_fallback": "Los compañeros no pueden ejecutarse en {{settings}}, así que se ejecutan en {{harness}}. Cada compañero puede fijar su propio entorno en su configuración."
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "Superpone al chat un diagnóstico en vivo del desplazamiento y los anclajes",
@@ -21057,7 +21060,10 @@
       "profile_harness_choose": "Elegir un harness del agente",
       "member_count_filtered_one": "{{shown}} de {{n}} compañero",
       "member_count_filtered_many": "{{shown}} de {{n}} compañeros",
-      "member_count_filtered_other": "{{shown}} de {{n}} compañeros"
+      "member_count_filtered_other": "{{shown}} de {{n}} compañeros",
+      "profile_harness_source_settings": "Definido en Configuración → Agent Harness.",
+      "profile_harness_source_legacy": "Definido por agent.member_acp_backend en config.json.",
+      "profile_harness_source_fallback": "Configuración → Agent Harness es {{settings}}, donde los compañeros no pueden ejecutarse, así que aquí es {{harness}}."
     },
     "tasksCapacityCard": {
       "title": "Tareas y capacidad",

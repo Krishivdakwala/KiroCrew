@@ -4621,7 +4621,11 @@ call regardless.
 
 `agents.<name>.acp_backend` pins the agent harness one crewmate's sessions run on,
 spelled as `agent.acp_backend` is (`kiro`, `kas`, `claude`, ...). Empty, the
-default, inherits `agent.member_acp_backend` exactly as before the field existed.
+default, inherits the loaded `agent.member_acp_backend`: a stored (legacy) value,
+else `agent.acp_backend` (Kiro CLI as KAS), else KAS when crewmates cannot run on
+that harness, logged and rung in the bell (`crewmate_harness_notice`). The Agent
+Harness panel (`GET /api/acp-backends` `crewmate_harness`) and the crewmate's
+Inherited option (`inherited_source`) say which of those decided it.
 
 - **One gate, one more tier.** `members.select_provider_backend` takes the pin as
   `crew_backend`: an explicit `spawn_run(backend=...)` still wins, then the pin,

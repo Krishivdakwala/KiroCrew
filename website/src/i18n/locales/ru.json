@@ -15266,7 +15266,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "Участники команды работают на {{harness}} — среде, выбранной здесь. Участник может закрепить свою в своих настройках.",
+        "crewmate_harness_legacy": "Участники команды работают на {{harness}}, заданной agent.member_acp_backend в config.json. Этот параметр важнее среды, выбранной здесь.",
+        "crewmate_harness_fallback": "Участники команды не могут работать на {{settings}}, поэтому работают на {{harness}}. Участник может закрепить свою среду в своих настройках."
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "Показывает поверх чата диагностику прокрутки и якорей в реальном времени",
@@ -21531,7 +21534,10 @@
       "member_count_filtered_one": "{{shown}} из {{n}} товарища по команде",
       "member_count_filtered_few": "{{shown}} из {{n}} товарищей по команде",
       "member_count_filtered_many": "{{shown}} из {{n}} товарищей по команде",
-      "member_count_filtered_other": "{{shown}} из {{n}} товарища по команде"
+      "member_count_filtered_other": "{{shown}} из {{n}} товарища по команде",
+      "profile_harness_source_settings": "Задано в Настройки → Agent Harness.",
+      "profile_harness_source_legacy": "Задано agent.member_acp_backend в config.json.",
+      "profile_harness_source_fallback": "В Настройки → Agent Harness выбрано {{settings}}, где участники работать не могут, поэтому здесь {{harness}}."
     },
     "tasksCapacityCard": {
       "title": "Задачи и ёмкость",

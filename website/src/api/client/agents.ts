@@ -160,6 +160,10 @@ export interface AgentResolvedModel {
   acp_backend?: string
   /** What clearing the pin would run on (the install's member harness), same spelling. */
   inherited_harness?: string
+  /** Where `inherited_harness` comes from: `legacy` (`agent.member_acp_backend`), `settings` (`agent.acp_backend`), or `fallback` (KAS, because crewmates cannot run on `settings_harness`). */
+  inherited_source?: 'legacy' | 'settings' | 'fallback'
+  /** `agent.acp_backend` in the config spelling, which a fallback names. */
+  settings_harness?: string
   /** What the crewmate's chat runs on, same spelling; `''` when the pin cannot start. */
   harness?: string
   /** The model a crew with a `member_id` starts its DM on (`''` when the harness picks); absent otherwise. */

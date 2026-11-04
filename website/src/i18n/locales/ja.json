@@ -14225,7 +14225,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "クルーメイトはここで選んだハーネス {{harness}} で動きます。各クルーメイトは自分の設定で固定できます。",
+        "crewmate_harness_legacy": "クルーメイトは config.json の agent.member_acp_backend で指定された {{harness}} で動きます。この設定はここで選んだハーネスより優先されます。",
+        "crewmate_harness_fallback": "クルーメイトは {{settings}} では動けないため、{{harness}} で動きます。各クルーメイトは自分の設定でハーネスを固定できます。"
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "チャットにスクロールとアンカーの診断情報をリアルタイムで重ねて表示します",
@@ -20109,7 +20112,10 @@
       "profile_harness_saved": "保存しました。次のメッセージから {{name}} はこのハーネスで動きます。",
       "profile_harness_unavailable": "{{name}} は {{harness}} で動く設定ですが、ここでは起動できないため、チャットもワーカーも起動しません。別のエージェントハーネスか「継承済み」を選んでください。",
       "profile_harness_choose": "エージェントハーネスを選ぶ",
-      "member_count_filtered_other": "{{n}} 人中 {{shown}} 人のクルーメイト"
+      "member_count_filtered_other": "{{n}} 人中 {{shown}} 人のクルーメイト",
+      "profile_harness_source_settings": "設定 → Agent Harness で指定。",
+      "profile_harness_source_legacy": "config.json の agent.member_acp_backend で指定。",
+      "profile_harness_source_fallback": "設定 → Agent Harness は {{settings}} ですが、クルーメイトはそこで動けないため、ここは {{harness}} です。"
     },
     "tasksCapacityCard": {
       "title": "タスクと処理能力",

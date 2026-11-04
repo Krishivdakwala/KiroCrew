@@ -14572,7 +14572,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "ক্রুমেটরা {{harness}}-এ চলে, যা এখানে বাছাই করা হার্নেস। কোনো ক্রুমেট নিজের সেটিংসে নিজের হার্নেস ঠিক করতে পারে।",
+        "crewmate_harness_legacy": "ক্রুমেটরা {{harness}}-এ চলে, যা config.json-এর agent.member_acp_backend দিয়ে ঠিক করা। এই সেটিং এখানে বাছাই করা হার্নেসের চেয়ে অগ্রাধিকার পায়।",
+        "crewmate_harness_fallback": "ক্রুমেটরা {{settings}}-এ চলতে পারে না, তাই তারা {{harness}}-এ চলে। কোনো ক্রুমেট নিজের সেটিংসে নিজের হার্নেস ঠিক করতে পারে।"
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "চ্যাটের উপরে লাইভ স্ক্রল ও অ্যাঙ্কর ডায়াগনস্টিকস দেখায়",
@@ -20583,7 +20586,10 @@
       "profile_harness_unavailable": "{{name}}-কে {{harness}}-এ চালানোর জন্য সেট করা আছে, যেটি এখানে চালু হতে পারে না, তাই তার চ্যাট আর ওয়ার্কাররাও চালু হয় না। অন্য একটি এজেন্ট হারনেস বেছে নাও, অথবা ইনহেরিট করা।",
       "profile_harness_choose": "একটি এজেন্ট হারনেস বেছে নাও",
       "member_count_filtered_one": "{{n}} জনের মধ্যে {{shown}} জন ক্রুমেট",
-      "member_count_filtered_other": "{{n}} জনের মধ্যে {{shown}} জন ক্রুমেট"
+      "member_count_filtered_other": "{{n}} জনের মধ্যে {{shown}} জন ক্রুমেট",
+      "profile_harness_source_settings": "সেটিংস → Agent Harness-এ ঠিক করা।",
+      "profile_harness_source_legacy": "config.json-এর agent.member_acp_backend দিয়ে ঠিক করা।",
+      "profile_harness_source_fallback": "সেটিংস → Agent Harness হলো {{settings}}, যেখানে ক্রুমেটরা চলতে পারে না, তাই এটি {{harness}}।"
     },
     "tasksCapacityCard": {
       "title": "কাজ ও সামর্থ্য",

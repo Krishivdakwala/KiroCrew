@@ -14572,7 +14572,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "क्रूमेट {{harness}} पर चलते हैं, जो यहाँ चुना गया हार्नेस है। कोई क्रूमेट अपनी सेटिंग्स में अपना हार्नेस तय कर सकता है।",
+        "crewmate_harness_legacy": "क्रूमेट {{harness}} पर चलते हैं, जो config.json में agent.member_acp_backend से तय है। यह सेटिंग यहाँ चुने गए हार्नेस से ऊपर है।",
+        "crewmate_harness_fallback": "क्रूमेट {{settings}} पर नहीं चल सकते, इसलिए वे {{harness}} पर चलते हैं। कोई क्रूमेट अपनी सेटिंग्स में अपना हार्नेस तय कर सकता है।"
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "चैट पर लाइव स्क्रॉल और ऐंकर डायग्नोस्टिक्स दिखाता है",
@@ -20583,7 +20586,10 @@
       "profile_harness_unavailable": "{{name}} को {{harness}} पर चलने के लिए सेट किया गया है, जो यहाँ शुरू नहीं हो सकता, इसलिए उसकी चैट और वर्कर भी शुरू नहीं होते। कोई दूसरा एजेंट हार्नेस चुनो, या विरासत में मिला।",
       "profile_harness_choose": "एजेंट हार्नेस चुनो",
       "member_count_filtered_one": "{{n}} में से {{shown}} क्रूमेट",
-      "member_count_filtered_other": "{{n}} में से {{shown}} क्रूमेट"
+      "member_count_filtered_other": "{{n}} में से {{shown}} क्रूमेट",
+      "profile_harness_source_settings": "सेटिंग्स → Agent Harness में तय।",
+      "profile_harness_source_legacy": "config.json में agent.member_acp_backend से तय।",
+      "profile_harness_source_fallback": "सेटिंग्स → Agent Harness {{settings}} है, जिस पर क्रूमेट नहीं चल सकते, इसलिए यह {{harness}} है।"
     },
     "tasksCapacityCard": {
       "title": "कार्य और क्षमता",

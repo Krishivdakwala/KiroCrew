@@ -3,8 +3,10 @@
 A crewmate can name the agent harness its own chat and the worker sessions it opens
 run on, beside the model it already pins. The value is spelled as
 ``agent.acp_backend`` is in ``config.json`` (``kiro``, ``kas``, ``claude``, ...);
-``""`` pins nothing and the crewmate inherits ``agent.member_acp_backend`` exactly
-as before the field existed.
+``""`` pins nothing and the crewmate inherits the loaded ``agent.member_acp_backend``:
+a stored (legacy) value, else ``agent.acp_backend``, else KAS when crewmates cannot
+run on that harness (``config.loader_builders._read_backend_choice``).
+:func:`inherited_harness_source` says which of those decided it.
 
 The pin is one input to the backend-selection gate
 (``members.select_provider_backend``), never a second gate. What this module adds
@@ -397,3 +399,76 @@ def models_route(config: Any, query: Any) -> tuple[str, bool] | None:
             kas_bundle.kas_route().bundle
         )
     return backend, on_bundle
+
+
+#: Where the harness a crewmate runs on comes from, as the Settings page names it.
+SOURCE_PIN = "pin"
+SOURCE_LEGACY = "legacy"
+SOURCE_SETTINGS = "settings"
+SOURCE_FALLBACK = "fallback"
+
+
+@dataclass(frozen=True)
+class CrewmateHarnessSource:
+    """The harness a crewmate runs on and which setting decided it.
+
+    *harness* is the stored spelling of what runs (``""`` when a pin cannot start);
+    *source* is one of the ``SOURCE_*`` values: the crewmate's own pin, a stored
+    ``agent.member_acp_backend`` (legacy), ``agent.acp_backend`` (Settings -> Agent
+    Harness), or KAS because crewmates cannot run on that Settings harness;
+    *settings_harness* is the stored spelling of ``agent.acp_backend``, which the
+    fallback alarm names.
+    """
+
+    harness: str
+    source: str
+    settings_harness: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "harness": self.harness,
+            "source": self.source,
+            "settings_harness": self.settings_harness,
+        }
+
+
+def inherited_harness_source(config: Any) -> CrewmateHarnessSource:
+    """What a crewmate with no pin runs on, and where it comes from. Blocking.
+
+    The harness is the loaded ``agent.member_acp_backend``, which the loader already
+    resolved (``config.loader_builders._read_backend_choice``), crossed through the
+    same gate every session start applies, so this never disagrees with a start.
+    Only the label is worked out here: whether ``config.json`` holds the legacy
+    setting (:func:`~kiro_crew.config.loader_document.member_acp_backend_declared`)
+    and, if not, whether the Settings harness is one crewmates can follow
+    (:func:`~kiro_crew.agent_sdk.backends.crewmate_inherited_backend`).
+    """
+    from kiro_crew.config.loader_document import member_acp_backend_declared
+
+    main = getattr(config.agent, "acp_backend", "")
+    runtime = _backends.resolve_selected_backend(config.agent.member_acp_backend)
+    if member_acp_backend_declared():
+        source = SOURCE_LEGACY
+    else:
+        _inherited, fell_back = _backends.crewmate_inherited_backend(main)
+        source = SOURCE_FALLBACK if fell_back else SOURCE_SETTINGS
+    return CrewmateHarnessSource(
+        _backends.backend_to_stored(runtime), source, _backends.backend_to_stored(main)
+    )
+
+
+def crewmate_harness_source(config: Any, crew: str | None) -> CrewmateHarnessSource:
+    """:func:`inherited_harness_source`, or crew *crew*'s own pin when it has one. Blocking.
+
+    Never raises: a pin that cannot start reads as ``harness=""`` with source
+    ``pin``, and the start itself still refuses it (H17).
+    """
+    pin = crewmate_pin_for(config, crew)
+    if pin is None:
+        return inherited_harness_source(config)
+    try:
+        harness = _backends.backend_to_stored(pin.resolve())
+    except CrewmateHarnessUnavailable:
+        harness = ""
+    main = _backends.backend_to_stored(getattr(config.agent, "acp_backend", ""))
+    return CrewmateHarnessSource(harness, SOURCE_PIN, main)

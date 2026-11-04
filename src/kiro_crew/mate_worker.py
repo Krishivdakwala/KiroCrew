@@ -876,7 +876,8 @@ def crewmate_worker_backend(config: KiroCrewConfig, crewmate: str | None = None)
     ``crewmate_harness.crewmate_backend_pin`` does for the worker's own session
     before ``members.select_provider_backend`` runs.
     Without a pin it is ``agent.member_acp_backend`` as the loader reads it (a
-    stored ``kiro`` already reads as KAS) crossed through
+    stored ``kiro`` already reads as KAS; with none stored it follows
+    ``agent.acp_backend``, or KAS when crewmates cannot run there) crossed through
     ``resolve_selected_backend``, the same gate the member route applies.
 
     *config* is the whole loaded config, never its ``agent`` section: the pin

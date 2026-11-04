@@ -14919,7 +14919,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "I membri della crew girano su {{harness}}, l’harness scelto qui. Ogni membro può fissarne uno nelle sue impostazioni.",
+        "crewmate_harness_legacy": "I membri della crew girano su {{harness}}, impostato da agent.member_acp_backend in config.json. Questa impostazione prevale sull’harness scelto qui.",
+        "crewmate_harness_fallback": "I membri della crew non possono girare su {{settings}}, quindi girano su {{harness}}. Ogni membro può fissare il proprio harness nelle sue impostazioni."
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "Sovrappone alla chat una diagnostica live di scorrimento e ancoraggi",
@@ -21057,7 +21060,10 @@
       "profile_harness_choose": "Scegli un harness dell’agente",
       "member_count_filtered_one": "compagni: {{shown}}/{{n}}",
       "member_count_filtered_many": "compagni: {{shown}}/{{n}}",
-      "member_count_filtered_other": "compagni: {{shown}}/{{n}}"
+      "member_count_filtered_other": "compagni: {{shown}}/{{n}}",
+      "profile_harness_source_settings": "Impostato in Impostazioni → Agent Harness.",
+      "profile_harness_source_legacy": "Impostato da agent.member_acp_backend in config.json.",
+      "profile_harness_source_fallback": "Impostazioni → Agent Harness è {{settings}}, su cui i membri della crew non possono girare, quindi qui è {{harness}}."
     },
     "tasksCapacityCard": {
       "title": "Attività e capacità",

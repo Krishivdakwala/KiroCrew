@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState, type KeyboardEvent, type React
 import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import type { TFn } from './membersPageModel'
 import { Check, Cpu, Gauge, Loader2, Lock, Puzzle, Shield, SlidersHorizontal, Sparkles, Users } from 'lucide-react'
 import { api, type MemberRosterRow } from '../../api/client'
 import { ApiError } from '../../api/apiError'
@@ -52,6 +53,30 @@ interface Picker {
   options: Option[]
   /** The line under the page's list: what the current pick resolves to or trades. */
   caption?: string
+}
+
+/**
+ * The Inherited option's hint: what it resolves to, then where that comes from
+ * (`inherited_source` on the crew readout). A fallback names the Settings harness
+ * crewmates cannot run on, so the person sees why Inherited is not that harness.
+ */
+function inheritedHarnessHint(
+  t: TFn,
+  inherited: string,
+  source: string | undefined,
+  settings: string | undefined,
+): string {
+  const harness = acpBackendName({ id: inherited })
+  const hint = t('pages.membersPage.profile_harness_inherited_hint', { harness })
+  const from =
+    source === 'legacy'
+      ? t('pages.membersPage.profile_harness_source_legacy')
+      : source === 'fallback' && settings !== undefined
+        ? t('pages.membersPage.profile_harness_source_fallback', { settings: acpBackendName({ id: settings }), harness })
+        : source === 'settings'
+          ? t('pages.membersPage.profile_harness_source_settings')
+          : ''
+  return from ? `${hint} ${from}` : hint
 }
 
 /** The stored permission a refused compare-and-set PUT reports, or undefined
@@ -339,7 +364,7 @@ export default function CrewProfileSettings({ member, slotKey, waiting = false }
       options: harnessOptions.map((h) => ({
         value: h, label: harnessLabel(h),
         desc: h === INHERIT_HARNESS
-          ? (resolved?.inherited_harness ? t('pages.membersPage.profile_harness_inherited_hint', { harness: acpBackendName({ id: resolved.inherited_harness }) }) : undefined)
+          ? (resolved?.inherited_harness ? inheritedHarnessHint(t, resolved.inherited_harness, resolved.inherited_source, resolved.settings_harness) : undefined)
           : resolved?.harness_error && h === resolved.acp_backend
             ? t('pages.membersPage.profile_harness_cannot_start')
             : workerHarnesses && !workerHarnesses.includes(h) ? t('pages.membersPage.profile_harness_no_workers', { name }) : undefined,

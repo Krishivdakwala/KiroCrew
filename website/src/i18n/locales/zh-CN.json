@@ -14225,7 +14225,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "队友运行在 {{harness}} 上，即此处选择的运行环境。每个队友可以在自己的设置中固定一个。",
+        "crewmate_harness_legacy": "队友运行在 {{harness}} 上，由 config.json 中的 agent.member_acp_backend 设定。该设置优先于此处选择的运行环境。",
+        "crewmate_harness_fallback": "队友无法运行在 {{settings}} 上，因此改为运行在 {{harness}} 上。每个队友可以在自己的设置中固定运行环境。"
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "在聊天上叠加实时滚动与锚点诊断信息",
@@ -20109,7 +20112,10 @@
       "profile_harness_saved": "已保存。从下一条消息起，{{name}} 在此运行框架上运行。",
       "profile_harness_unavailable": "{{name}} 设置为使用 {{harness}}，但它在这里无法启动，因此其聊天和工作会话也不会启动。请选择其他代理运行框架，或选择“继承”。",
       "profile_harness_choose": "选择代理运行框架",
-      "member_count_filtered_other": "显示 {{shown}} / {{n}} 位队友"
+      "member_count_filtered_other": "显示 {{shown}} / {{n}} 位队友",
+      "profile_harness_source_settings": "在“设置 → Agent Harness”中设定。",
+      "profile_harness_source_legacy": "由 config.json 中的 agent.member_acp_backend 设定。",
+      "profile_harness_source_fallback": "“设置 → Agent Harness”为 {{settings}}，队友无法在其上运行，因此这里是 {{harness}}。"
     },
     "tasksCapacityCard": {
       "title": "任务与容量",

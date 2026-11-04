@@ -14225,7 +14225,10 @@
         "goose": "goose",
         "opencode": "OpenCode",
         "pi": "Pi",
-        "strands": "Strands"
+        "strands": "Strands",
+        "crewmate_harness_settings": "크루메이트는 여기서 고른 하네스인 {{harness}}에서 실행됩니다. 크루메이트마다 자기 설정에서 고정할 수 있습니다.",
+        "crewmate_harness_legacy": "크루메이트는 config.json의 agent.member_acp_backend로 지정된 {{harness}}에서 실행됩니다. 이 설정이 여기서 고른 하네스보다 우선합니다.",
+        "crewmate_harness_fallback": "크루메이트는 {{settings}}에서 실행할 수 없어서 {{harness}}에서 실행됩니다. 크루메이트마다 자기 설정에서 하네스를 고정할 수 있습니다."
       },
       "debugToolsTab": {
         "overlays_the_chat_with_live_scroll_and_anchor_dia": "실시간 스크롤 및 앵커 진단 정보를 채팅 위에 표시합니다",
@@ -20109,7 +20112,10 @@
       "profile_harness_saved": "저장했습니다. 다음 메시지부터 {{name}}이(가) 이 하네스에서 실행됩니다.",
       "profile_harness_unavailable": "{{name}}은(는) {{harness}}에서 실행되도록 설정되어 있지만 여기서는 시작할 수 없어 채팅과 워커도 시작되지 않습니다. 다른 에이전트 하네스나 상속됨을 선택하세요.",
       "profile_harness_choose": "에이전트 하네스 선택",
-      "member_count_filtered_other": "크루메이트 {{n}}명 중 {{shown}}명"
+      "member_count_filtered_other": "크루메이트 {{n}}명 중 {{shown}}명",
+      "profile_harness_source_settings": "설정 → Agent Harness에서 지정됨.",
+      "profile_harness_source_legacy": "config.json의 agent.member_acp_backend로 지정됨.",
+      "profile_harness_source_fallback": "설정 → Agent Harness가 {{settings}}인데 크루메이트는 여기서 실행할 수 없어서 {{harness}}입니다."
     },
     "tasksCapacityCard": {
       "title": "작업 및 용량",
