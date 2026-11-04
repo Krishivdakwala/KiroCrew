@@ -21,10 +21,14 @@ from __future__ import annotations
 
 import asyncio
 import re
+import secrets
+import time
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from kiro_crew import extension_governance as _gov
 from kiro_crew.mcp_utils import registry_accepts_query
+from kiro_crew.platform.interfaces import CapabilityResult as _CapabilityResult
 
 if TYPE_CHECKING:
     from kiro_crew.platform.interfaces import CapabilityManager, CapabilityResult
@@ -110,6 +114,45 @@ def _refused(reason: str) -> "CapabilityResult":
     return CapabilityResult(ok=False, message=f"Blocked by governance policy: {reason}")
 
 
+#: How long a prepared marketplace app waits for the yes before its staging
+#: folder is deleted (checked on every apply and confirm).
+MARKET_APP_PENDING_TTL = 15 * 60
+
+
+def _clock() -> float:
+    """The expiry clock; a seam of its own so a test never rebinds ``time.monotonic``."""
+    return time.monotonic()
+
+
+def _load_app_installer() -> Any:
+    """The gateway app installer (``kiro_crew.apps.marketplace_install``), imported late."""
+    import importlib
+
+    return importlib.import_module("kiro_crew.apps.marketplace_install")
+
+
+def _requested_item(plan: Dict[str, Any]) -> "Dict[str, Any] | None":
+    """The plan's root: the item the person asked for (``reason == "REQUESTED"``)."""
+    items = plan.get("items")
+    for item in items if isinstance(items, list) else []:
+        if isinstance(item, dict) and item.get("reason") == "REQUESTED":
+            return item
+    return None
+
+
+@dataclass(frozen=True)
+class MarketAppPending(_CapabilityResult):
+    """``market_apply`` on an app plan: prepared, not installed, waiting for the yes.
+
+    ``confirm`` is what the dashboard shows (the installer's confirm data with
+    ``inFolder``, plus the plan's permission union as ``planPermissions``);
+    ``token`` names this prepared install for :meth:`market_app_complete`.
+    """
+
+    confirm: Dict[str, Any] = field(default_factory=dict)
+    token: str = ""
+
+
 class BoundedCapabilityManager:
     """Wraps a ``CapabilityManager`` so every async MUTATION op is time-bounded
     with ``asyncio.wait_for``.
@@ -137,6 +180,9 @@ class BoundedCapabilityManager:
 
     def __init__(self, inner: "CapabilityManager") -> None:
         self._inner = inner
+        # Marketplace apps prepared by ``market_apply`` and waiting for the yes,
+        # keyed by a one-time token: ``(ref, plan_digest, PreparedInstall)``.
+        self._pending_apps: Dict[str, tuple] = {}
 
     def available(self) -> bool:
         return self._inner.available()
@@ -297,9 +343,128 @@ class BoundedCapabilityManager:
                 denied = await _off_loop(_gov.extension_install_denied, kind, ident)
                 if denied:
                     return _refused(denied)
+        root = _requested_item(plan)
+        if root is not None and root.get("kind") == "app":
+            return await self._prepare_app(ref, plan_digest, plan, root)
         return await asyncio.wait_for(
             self._inner.market_apply(ref, plan_digest), timeout=CAPABILITY_INSTALL_TIMEOUT
         )
+
+    async def _prepare_app(
+        self, ref: str, plan_digest: str, plan: Dict[str, Any], root: Dict[str, Any]
+    ) -> "CapabilityResult":
+        """A ``kind = app`` plan: the gateway app installer, never the package path.
+
+        Resolve, download, verify the sha256 and unpack safely into staging, and
+        read the capabilities in the folder. Nothing is installed: the confirm data
+        goes back to the dashboard and only :meth:`market_app_complete` installs.
+        """
+        from kiro_crew.platform.interfaces import CapabilityResult
+
+        probe = getattr(self._inner, "market_client", None)
+        client = probe() if callable(probe) else None
+        if client is None:
+            return CapabilityResult(
+                ok=False, message="this build cannot install apps from Kiro Space Discover"
+            )
+        await self._expire_pending_apps()
+        try:
+            installer = _load_app_installer()
+        except ImportError:
+            return CapabilityResult(
+                ok=False, message="this build cannot install apps from Kiro Space Discover"
+            )
+        version = root.get("version")
+        try:
+            prepared = await asyncio.wait_for(
+                asyncio.to_thread(
+                    installer.prepare_market_install,
+                    client,
+                    str(root.get("ref", ref)),
+                    version if isinstance(version, int) else None,
+                ),
+                timeout=CAPABILITY_INSTALL_TIMEOUT,
+            )
+        except Exception as exc:  # noqa: BLE001 - the installer's refusal, shown as is
+            return CapabilityResult(ok=False, message=str(getattr(exc, "message", exc)))
+        stale = [t for t, p in self._pending_apps.items() if p[0] == ref]
+        await _discard_off_loop([self._pending_apps.pop(t)[2] for t in stale])
+        token = secrets.token_urlsafe(24)
+        self._pending_apps[token] = (ref, plan_digest, prepared, _clock())
+        confirm = dict(prepared.confirm)
+        confirm["planPermissions"] = plan.get("permissions")
+        return MarketAppPending(ok=True, confirm=confirm, token=token)
+
+    async def _expire_pending_apps(self) -> None:
+        """Delete prepared installs older than :data:`MARKET_APP_PENDING_TTL` seconds.
+
+        The entries are popped on the loop; their staging folders are deleted
+        together in one worker thread.
+        """
+        cutoff = _clock() - MARKET_APP_PENDING_TTL
+        expired = [t for t, p in self._pending_apps.items() if p[3] < cutoff]
+        await _discard_off_loop([self._pending_apps.pop(t)[2] for t in expired])
+
+    async def market_app_complete(
+        self, ref: str, plan_digest: str, token: str, *, confirmed: bool
+    ) -> "CapabilityResult":
+        """After an explicit yes: re-check the digest, then install the app disabled.
+
+        The token is spent either way. A changed plan, a missing yes or an unknown
+        token installs nothing and deletes the staging folder.
+        """
+        from kiro_crew.platform.interfaces import CapabilityResult
+
+        await self._expire_pending_apps()
+        entry = self._pending_apps.pop(token, None)
+        if entry is None or entry[0] != ref or entry[1] != plan_digest:
+            if entry is not None:
+                await _discard_off_loop([entry[2]])
+            return CapabilityResult(ok=False, message="no prepared install matches; start again")
+        prepared = entry[2]
+        if confirmed is not True:
+            await _discard_off_loop([prepared])
+            return CapabilityResult(ok=False, message="installing needs an explicit yes")
+        # Governance is asked again: a ceiling tightened between apply and the yes
+        # still stops the install.
+        denied = await _off_loop(_gov.extensions_off, "market_apply")
+        if denied:
+            await _discard_off_loop([prepared])
+            return _refused(denied)
+        plan = await self.market_plan(ref)
+        if not isinstance(plan, dict) or plan.get("planDigest") != plan_digest:
+            await _discard_off_loop([prepared])
+            return CapabilityResult(
+                ok=False,
+                message="the plan changed since it was shown; nothing was installed",
+            )
+        try:
+            installer = _load_app_installer()
+        except ImportError:
+            await _discard_off_loop([prepared])
+            return CapabilityResult(
+                ok=False, message="this build cannot install apps from Kiro Space Discover"
+            )
+        result = await asyncio.wait_for(
+            asyncio.to_thread(installer.complete_market_install, prepared, confirmed=True),
+            timeout=CAPABILITY_INSTALL_TIMEOUT,
+        )
+        return CapabilityResult(ok=bool(result.ok), message=str(result.error or ""))
+
+
+async def _discard_off_loop(prepared: List[Any]) -> None:
+    """Delete the staging folders of *prepared* installs in one worker thread.
+
+    ``discard`` runs ``shutil.rmtree``, which must not block the gateway loop.
+    """
+    if not prepared:
+        return
+
+    def _run() -> None:
+        for item in prepared:
+            item.discard()
+
+    await asyncio.to_thread(_run)
 
 
 def bind_capability_manager(inner: "CapabilityManager") -> "CapabilityManager":
