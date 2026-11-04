@@ -271,28 +271,80 @@ def selectable_harnesses() -> list[str]:
     return sorted(_backends.backend_to_stored(b) for b in _backends.selectable_backends())
 
 
-def worker_harnesses() -> list[str]:
+#: What a crewmate's own chat needs from its harness: the saved member spec
+#: (capabilities) and the session-control tools it dispatches workers with.
+CREWMATE_CAPABLE_BACKENDS = (
+    _backends.ACP_BACKENDS_MEMBER_CAPABILITIES & _backends.ACP_BACKENDS_MEMBER_DISPATCH
+)
+
+
+def crewmate_harnesses(config: Any) -> list[str]:
+    """The harnesses a crewmate may be pinned to here, in the stored spelling, sorted.
+
+    The one list the harness picker offers and a save accepts: selectable on this
+    gateway now (``selectable_backends()``, which the ``agent_backend`` governance
+    scope already narrows) AND crewmate-capable (:data:`CREWMATE_CAPABLE_BACKENDS`).
+    Each harness is judged by the runtime its pin starts on (:meth:`CrewBackendPin.resolve`),
+    so a Kiro CLI pin counts as KAS where kiro-cli's v3 engine takes it, and as
+    kiro-cli, which is not crewmate-capable, everywhere else.
+    """
+    out: list[str] = []
+    for backend in _backends.selectable_backends():
+        stored = _backends.backend_to_stored(backend)
+        try:
+            runtime = CrewBackendPin("", stored, _kas_bundle(config)).resolve()
+        except CrewmateHarnessUnavailable:
+            continue
+        if runtime in CREWMATE_CAPABLE_BACKENDS:
+            out.append(stored)
+    return sorted(out)
+
+
+def _harnesses_whose_runtime_is_in(config: Any, runtimes: frozenset[str]) -> list[str]:
+    """The selectable harnesses whose pin starts on a runtime in *runtimes*, stored spelling, sorted.
+
+    Judged the way :func:`crewmate_harnesses` judges a pin, by the runtime it
+    resolves to: a worker checks its session's runtime backend, so a Kiro CLI pin
+    that starts on KAS has KAS's worker kit and tool limits.
+    """
+    out: list[str] = []
+    for backend in _backends.selectable_backends():
+        stored = _backends.backend_to_stored(backend)
+        try:
+            runtime = CrewBackendPin("", stored, _kas_bundle(config)).resolve()
+        except CrewmateHarnessUnavailable:
+            continue
+        if runtime in runtimes:
+            out.append(stored)
+    return sorted(out)
+
+
+def worker_harnesses(config: Any) -> list[str]:
     """The selectable harnesses a crewmate's worker can run on, stored spelling, sorted."""
-    return sorted(
-        _backends.backend_to_stored(b)
-        for b in _backends.selectable_backends()
-        if b in _backends.ACP_BACKENDS_MATE_WORKER_KIT
+    return _harnesses_whose_runtime_is_in(config, frozenset(_backends.ACP_BACKENDS_MATE_WORKER_KIT))
+
+
+def worker_tool_limit_harnesses(config: Any) -> list[str]:
+    """The selectable harnesses that hold a worker's single-tool limits, stored spelling."""
+    return _harnesses_whose_runtime_is_in(
+        config, frozenset(_backends.ACP_BACKENDS_MATE_WORKER_TOOL_LIMITS)
     )
 
 
-def harness_pin_rejected(value: object) -> str | None:
+def harness_pin_rejected(value: object, config: Any) -> str | None:
     """Why *value* cannot be stored as a crewmate's harness pin, or ``None``.
 
-    ``""`` clears the pin. Anything else must be a harness this gateway can
-    start right now, so a save can never store a pin that would refuse every
-    session.
+    ``""`` clears the pin. Anything else must be in :func:`crewmate_harnesses`,
+    so a save can never store a pin that would refuse every session or run a
+    crewmate on a harness that cannot carry it.
     """
     if not isinstance(value, str):
         return "acp_backend must be a string"
     stored = value.strip()
-    if not stored or stored in selectable_harnesses():
+    allowed = crewmate_harnesses(config)
+    if not stored or stored in allowed:
         return None
-    return "acp_backend must be one of: " + ", ".join(["(empty)", *selectable_harnesses()])
+    return "acp_backend must be one of: " + ", ".join(["(empty)", *allowed])
 
 
 def pinned_entitlement_backend(
